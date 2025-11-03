@@ -28,14 +28,21 @@ store_dat <- mutate(data_00,`Postal_Code` = normalize_zip(`Postal_Code`),
                     `Ship_Date` = as.Date(`Ship_Date`), 
                     `Month`=  factor(format(`Order_Date`, "%b"), month.abb, ordered = TRUE), 
                     `Year` = year(`Order_Date`), 
-                    `Fulfillment` =  as.numeric (difftime(`Ship_Date`, `Order_Date`, units = "days")), 
+                    `Fulfillment` =  as.integer (difftime(`Ship_Date`, `Order_Date`, units = "days")), 
                     `State` = state.abb[match(`State`, state.name)] |>
                       replace_na('DC'),
                      STATEFIPS = str_pad(as.character(fips(`State`, to = "FIPS")), 2, pad = "0")) |>
-                  
-                     rename(`Sub_Category` = `Sub-Category`) |> select(-`Order_ID`, -`Country`) 
+  
+                     rename(`Sub_Category` = `Sub-Category`) |> select(-`Order_ID`, -`Country`)                         
 
-save(store_dat, file = "store_data.RData")
+# County <- zip_code_db |> 
+#   select(zipcode, county) |> 
+#   right_join(store_dat, by = c("zipcode"="Postal_Code"))|> select(county)  
+
+ 
+                     
+
+saveRDS(store_dat, file = "store_data.RDS")
 write.csv(store_dat,"store_dat.csv")
 
 ```
@@ -46,15 +53,11 @@ write.csv(store_dat,"store_dat.csv")
 ```{r}
 
 #1-way Contingency Tables
-cat("1-way Contingency Table for Segment", "\n")
-table(store_dat$Segment)
-cat("\n")
-
 cat("1-way Contingency Table for Category", "\n")
 table(store_dat$Category)
 cat("\n")
 
-cat("1-way Contingency for Table", "\n")
+cat("1-way Contingency for Table for Region", "\n")
 table(store_dat$Region)
 cat("\n")
 
@@ -67,8 +70,8 @@ table(store_dat$Month)
 cat("\n")
 
 #2-way Contingency Tables
-cat("2-way Contingency Table for Category and Segment ", "\n")
-table(store_dat$Category, store_dat$Segment)
+cat("2-way Contingency Table for Category and Region ", "\n")
+table(store_dat$Category, store_dat$Region)
 cat("\n")
 
 cat("2-way Contingency Table for Category and Sub-Category ", "\n")
@@ -106,17 +109,6 @@ store_dat |>
             q3 = quantile(Sales, 0.75),
             max = max(Sales))
 
-cat("Fulfillment Time by State ", "\n")
-store_dat |> 
-  select(Fulfillment, State) |> 
-  group_by(State) |>
-  summarize(min = min(Fulfillment),
-            q1 = quantile(Fulfillment, 0.25),
-            median = median(Fulfillment),
-            mean = mean(Fulfillment),
-            q3 = quantile(Fulfillment, 0.75),
-            max = max(Fulfillment))
-
 cat("Sales by State ", "\n")
 store_dat |> 
   select(Sales, State) |> 
@@ -152,13 +144,13 @@ Create at least six plots.
 
 ```{r}
 #Bar Graphs
-ggplot(data=store_dat, aes(x=Month)) +
+ggplot(data=store_dat, aes(x = Month)) +
   geom_bar() +
   geom_text(stat='count', aes(label=..count..), vjust=-1) +
   labs(title = "Count of Orders by Month", x = "Month", y = "Count by Month")
 
 
-ggplot(data = store_dat, aes(x= Sub_Category)) +
+ggplot(data = store_dat, aes(x = Sub_Category)) +
   geom_bar() +
   geom_text(stat='count', aes(label=..count..), vjust=-1) +
   theme(axis.text.x = element_text(angle = 90, vjust=.5, hjust=1)) +
