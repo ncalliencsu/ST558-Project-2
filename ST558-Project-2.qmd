@@ -35,9 +35,10 @@ store_dat <- mutate(data_00,`Postal_Code` = normalize_zip(`Postal_Code`),
   
                      rename(`Sub_Category` = `Sub-Category`) |> select(-`Order_ID`, -`Country`)                         
 
-# County <- zip_code_db |> 
-#   select(zipcode, county) |> 
-#   right_join(store_dat, by = c("zipcode"="Postal_Code"))|> select(county)  
+ store_dat <- zip_code_db |> 
+   select(zipcode, county) |> 
+   right_join(store_dat, by = c("zipcode"="Postal_Code")) |>
+   rename(`Postal_Code` = `zipcode`) |> rename(`County` = `county`)
 
  
                      
@@ -91,7 +92,7 @@ cat("Sales by Category ", "\n")
 store_dat |> 
   select(Sales, Category) |> 
   group_by(Category) |>
-  summarize(min = min(Sales),
+  summarize(min = min(Sales),  #take inputs from a widget
             q1 = quantile(Sales, 0.25),
             median = median(Sales),
             mean = mean(Sales),

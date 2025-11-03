@@ -90,7 +90,7 @@ ui <- fluidPage(
         selected = NA
       ),
       
-      actionButton(inputId = "subset",label = "Analyze Data")
+      actionButton(inputId = "analyze",label = "Analyze Data")
 
       
     ), #sidebarPanel()
@@ -267,7 +267,7 @@ server <- function(input, output, session) {
 
 #  data_subset <- reactiveValues(data = NULL)
   
-  observeEvent(input$subset,{
+  observeEvent(input$analyze,{
 
     #Numeric Variables
  
@@ -283,72 +283,22 @@ server <- function(input, output, session) {
       cat_subset <- cvars_1[4]
     }
 
-    if(input$sub_category == "All"){
-      sub_cat_subset <- cvars_2[-1]
-    } else {
-      sub_cat_subset <- input$sub_category
-    }
-
-    # if(input$schl_corr == "all"){
-    #   schl_sub <- SCHLvals
-    # } else if(input$schl_corr == "no_hs"){
-    #   schl_sub <- SCHLvals[c("0", "01", "02", "03", "04",
-    #                          "05", "06", "07", "08", "09",
-    #                          "10", "11", "12", "13", "14", "15")]
-    # } else if(input$schl_corr == "hs"){
-    #   schl_sub <- SCHLvals[as.character(16:19)]
-    # } else {
-    #   schl_sub <- SCHLvals[as.character(20:24)]
-    # }
-    # 
-    # corr_vars <- c(input$corr_x, input$corr_y)
-    # 
-    # subsetted_data <- my_sample |>
-    #   filter(#cat vars first
-    #     HHLfac %in% hhl_sub,
-    #     FSfac %in% fs_sub,
-    #     SCHLfac %in% schl_sub
-    #   ) %>% #make sure numeric variables are in appropriate range, must use %>% here for {} to work
-    #   {if("WKHP" %in% corr_vars) filter(., WKHP > 0) else .} %>%
-    #   {if("VALP" %in% corr_vars) filter(., !is.na(VALP)) else .} %>%
-    #   {if("TAXAMT" %in% corr_vars) filter(., !is.na(TAXAMT)) else .} %>%
-    #   {if("GRPIP" %in% corr_vars) filter(., GRPIP > 0) else .} %>%
-    #   {if("GASP" %in% corr_vars) filter(., GASP > 0) else .} %>%
-    #   {if("ELEP" %in% corr_vars) filter(., ELEP > 0) else .} %>%
-    #   {if("WATP" %in% corr_vars) filter(., WATP > 0) else .} %>%
-    #   {if("PINCP" %in% corr_vars) filter(., AGEP > 18) else .} %>%
-    #   {if("JWMNP" %in% corr_vars) filter(., !is.na(JWMNP)) else .}
-    # 
-    # index <- sample(1:nrow(subsetted_data),
-    #                 size = input$corr_n,
-    #                 replace = TRUE,
-    #                 prob = subsetted_data$PWGTP/sum(subsetted_data$PWGTP))
-    # 
-    # #***You now need to update the sample_corr reactive value object***#
-    # #the corr_data argument should be updated to be the subsetted_data[index,]
-    # #the corr_truth argument should be updated to be the correlation between
-    # #the two variables selected. This can be found with this code:
-    # #cor(sample_corr$corr_data |> select(corr_vars))[1,2]
-    # 
-    # sample_corr$corr_data <- subsetted_data[index,]
-    # sample_corr$corr_truth <- cor(sample_corr$corr_data |>
-    #                                 select(corr_vars))[1,2]
+    if(input$sub_category & input$category == "All"){
+     sub_cat_subset <- cvars_2[-1]
+    } else if(input$category == "Furniture" & input$sub_category == "All"){
+     sub_cat_subset <- furniture[-1]
+    } else if(input$category == "Furniture" & input$sub_category == "Furnishings"){
+       sub_cat_subset <- furniture[2]
+    } else if(input$category == "Furniture" & input$sub_category == "Bookcases"){
+      sub_cat_subset <- furniture[3]
+    } else if(input$category == "Furniture" & input$sub_category == "Chairs"){
+        sub_cat_subset <- furniture[4]
+    } else if (input$category == "Furniture" & input$sub_category == "Tables") {
+      }
 
   })
-
-
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
+  #Create a renderDataTable() object to display the data
+#          output$DTO_download <- renderDataTable()
   
   }
 
