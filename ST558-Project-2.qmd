@@ -16,6 +16,7 @@ library(readxl)
 library(tidyverse)
 library(tigris)
 library(sf)
+library(scales)
 library(zipcodeR)
 
 data_00 <- read_xls("US Superstore data.xls") 
@@ -31,7 +32,8 @@ store_dat <- mutate(data_00,`Postal_Code` = normalize_zip(`Postal_Code`),
                     `Fulfillment` =  as.integer (difftime(`Ship_Date`, `Order_Date`, units = "days")), 
                     `State` = state.abb[match(`State`, state.name)] |>
                       replace_na('DC'),
-                     STATEFIPS = str_pad(as.character(fips(`State`, to = "FIPS")), 2, pad = "0")) |>
+                     STATEFIPS = str_pad(as.character(fips(`State`, to = "FIPS")), 2, pad = "0"),
+                    `Discount` = (`Discount`*100)) |>
   
                      rename(`Sub_Category` = `Sub-Category`) |> select(-`Order_ID`, -`Country`)                         
 
@@ -144,12 +146,11 @@ Create at least six plots.
 ∗ At least one plot should be a plot that we didn’t cover in class (say a heatmap or something like that - depends on your data - lots of good examples to consider here https://exts.ggplot2.tidyverse.org/gallery/)
 
 ```{r}
-#Bar Graphs
+#Bar Plots
 ggplot(data=store_dat, aes(x = Month)) +
   geom_bar() +
   geom_text(stat='count', aes(label=..count..), vjust=-1) +
   labs(title = "Count of Orders by Month", x = "Month", y = "Count by Month")
-
 
 ggplot(data = store_dat, aes(x = Sub_Category)) +
   geom_bar() +
@@ -157,9 +158,24 @@ ggplot(data = store_dat, aes(x = Sub_Category)) +
   theme(axis.text.x = element_text(angle = 90, vjust=.5, hjust=1)) +
   labs(title = "Count of Orders by Sub-Category", x = "Sub-Category", y = "Count by Sub-Category")
 
+#Side by Side Bar Plots
+ggplot(data = store_dat, aes(x= Category , fill = Region)) +
+  geom_bar(position = "dodge") +
+  labs(x = "Category") +
+  scale_fill_discrete("Region") +
+  labs(title = "Count of Orders by Region and Category", x = "Category", y = "Count by Region")
+
+
 #Box Plots
 ggplot(store_dat, aes(x = Region, y = Sales , fill = Region)) +
   geom_boxplot() + labs(title = "Boxplot of Sales by Region", x = "Region", y = "Sales") + coord_cartesian(ylim = c(0, 250))
+
+
+#Histograms
+ggplot(store_dat, aes(x = log(Sales), fill = Region)) +
+  geom_histogram(aes(y = ..density..), color = 'black', position = "identity") +
+  labs(title = "Distribution of Sales by Region", x = "Log Sales", y = "Density")
+
 
 #Scatter Plots
 ggplot(store_dat, aes(x = Order_Date, y = Sales, color = Month)) + 
