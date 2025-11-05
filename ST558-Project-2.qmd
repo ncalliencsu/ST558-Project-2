@@ -55,6 +55,8 @@ write.csv(store_dat,"store_dat.csv")
 – Numerical summaries (means, medians, sds, etc.) for quantitative variables at levels of categorical variables
 ```{r}
 
+# Categorical Variable Summaries
+
 #1-way Contingency Tables
 cat("1-way Contingency Table for Category", "\n")
 table(store_dat$Category)
@@ -74,7 +76,7 @@ cat("\n")
 
 #2-way Contingency Tables
 cat("2-way Contingency Table for Category and Region ", "\n")
-table(store_dat$Category, store_dat$Region)
+  table(store_dat$Category, store_dat$Region)
 cat("\n")
 
 cat("2-way Contingency Table for Category and Sub-Category ", "\n")
@@ -90,6 +92,8 @@ cat("2-way Contingency Table for Category and Month ", "\n")
 table(store_dat$Category, store_dat$Month)
 cat("\n")
 
+
+#Numerical Variable Summaries
 cat("Sales by Category ", "\n")
 store_dat |> 
   select(Sales, Category) |> 
@@ -146,7 +150,7 @@ Create at least six plots.
 ∗ At least one plot should be a plot that we didn’t cover in class (say a heatmap or something like that - depends on your data - lots of good examples to consider here https://exts.ggplot2.tidyverse.org/gallery/)
 
 ```{r}
-#Bar Plots
+#Simple Bar Plots
 ggplot(data=store_dat, aes(x = Month)) +
   geom_bar() +
   geom_text(stat='count', aes(label=..count..), vjust=-1) +
@@ -158,7 +162,7 @@ ggplot(data = store_dat, aes(x = Sub_Category)) +
   theme(axis.text.x = element_text(angle = 90, vjust=.5, hjust=1)) +
   labs(title = "Count of Orders by Sub-Category", x = "Sub-Category", y = "Count by Sub-Category")
 
-#Side by Side Bar Plots
+#Grouped Bar Plots
 ggplot(data = store_dat, aes(x= Category , fill = Region)) +
   geom_bar(position = "dodge") +
   labs(x = "Category") +

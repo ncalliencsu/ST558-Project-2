@@ -10,9 +10,9 @@ library(zipcodeR)
 source("project2_2helper.R")
 
 
-############################################################
+########################################################################################################
 #                        UI Definition
-############################################################  
+##########################################################################################################  
 ui <- fluidPage(
 
   titlePanel("Store Data Analysis"),
@@ -65,6 +65,7 @@ ui <- fluidPage(
         selected = cvars_2[1]
       ),
       
+
       actionButton(inputId = "analyze",label = "Analyze Data")
 
       
@@ -73,11 +74,12 @@ ui <- fluidPage(
     #Main Panel Definition
     mainPanel(
       tabsetPanel(
+        id = "main_tabs",
         tabPanel("About",
                  h4("Description and Purpose of the App"), 
 
                  # Output area for Text
-                 p( "Purpose of the App"),
+                 p("Purpose of the App"),
                  p("Description of the Data"), 
                  p("Description of the App"), 
                                     
@@ -85,68 +87,94 @@ ui <- fluidPage(
         ),
         
         tabPanel("Data Download",
+                 
+                 card(card_header("Data Table"),
+                      
                  dataTableOutput("DT_download"),
-                 downloadButton("download", "Download Data"),
+                 ), 
+                 downloadButton("downloadData", "Download Data"),
 
                 ),
         
-        tabPanel("Data Exploration",
-              tabsetPanel(
-                  tabPanel("Categorical Variables",
-                               
-              #Categorical Variable Selections
-#             h2("Select Categorical Variable:"),
+        tabPanel("Data Exploration", 
+                tabsetPanel(
+                  id = "data_exp",
+                  
+
+###########################Categorical Variable Analysis###############################################
+
+                  tabPanel("Categorical Variable Analysis",
 
                   ui <- page_fillable(
-  
-                  layout_columns(
-                    card(card_header(NULL),
-                         
-                         layout_columns(
-                           card(card_header("Select Primary Categorical Variable")),
-                           card(card_header("Select Secondary Categorical Variable")),
-                           col_widths = c(6, 6)
-                                        )
-                         ),
-                    
-                    card(card_header("Numerical Summaries")),
-                    card(card_header("Graphical Summaries")),
-                    
-                    col_widths = c(12, 12, 12)
-                                )
+                    # Numeric Summaries
+                     card(
+                      card_header("Data Summary"),
+                      layout_sidebar(
+                        sidebar = sidebar(
+                          bg = "lightgrey",
+                          
+                          selectizeInput(
+                            inputId = "cat_sum_choice",
+                            label = "Select Summary Type",
+                            choices = c(NA, cat_summaries) ,
+                            selected = NULL
+                          ),
+                          
+                          #Dynamic UI for Categorical Numerical Summaries Selection
+                          uiOutput(outputId = "cat_sum_select_controls"),
+ 
+                          actionButton(inputId = "cat_sum_display",label = "Display Summary"),
+                          ),
+                          
+                          #Dynamic UI for Categorical Numerical Summaries Output
+                          uiOutput("DT_cat_sum")
+                        
+                        ), #layout sidebar
+
+                    ), #card
+
+                  # Graphical Summaries
+                    card(
+                      card_header("Graphical Summary"),
+                      layout_sidebar(
+                        sidebar = sidebar(
+                          bg = "lightgrey",
+                          
+                          selectizeInput(
+                            inputId = "cat_plot_choice",
+                            label = "Select Chart Type",
+                            choices = c(NA, cat_charts) ,
+                            selected = NULL
+                            ),
+                          
+                          #Dynamic UI for Categorical Graphical Summary Selection
+                          uiOutput("cat_graph_select_controls"),
+                          
+                          actionButton(inputId = "cat_plot_display",label = "Display Plot")
+                          ), #sidebar
+                       
+                          "Main",
+                          plotOutput("plot_exp_cat")
+                        ), #layout
+                      ),
+                  )  #page fillable
                   
-                                      ),
-                
-                    # Output area for Table
-                    dataTableOutput("DT_exp_cat"),
-                           
-                    # Output area for plots
-                    plotOutput("plot_exp_cat")
-                          ),
-                               
-                  tabPanel("Numeric Variables",
-                               
-                           # num widgets go here  
+                  ), #tabPanel Categorical Variables
 
-                           # Output area for Table
-                           dataTableOutput("DT_exp_num"),
-                           
-                           # Output area for plots
-                           plotOutput("plot_exp_num")                               
-                          ),
-                             
 
-                  # Output area for plots
-                   plotOutput("plot"),
-                    )
+####################Numeric Variable Analysis##################
+
+
+                  ) #tabsetPanel Data Exploration
+              
         ) # tabPanel Data Exploration
-      ) #tabsetPanel under Main Panel
+      ) #tabsetPanel Main Panel
     ) #mainPanel
     
   ), #sidebarLayout
   
  
-) #fluidPage
+) # ui end (fluidpage)
   
 my_data <-readRDS(file = "store_data.RDS")
 
@@ -158,7 +186,8 @@ my_data <-readRDS(file = "store_data.RDS")
 # Define server logic 
 server <- function(input, output, session) {
 
-# Update Slider Values based on Numeric Variable Selection
+# Update Slider Values on Main Sidebar
+# based on Numeric Variable Selection
   
   observeEvent(input$num_var_1,{
     
@@ -205,12 +234,15 @@ server <- function(input, output, session) {
                       min = vals[1],
                       max = vals[2],)
   })
+ 
+  
   #Create a reactiveValues() object on the server side to subset
   #your data appropriately and pass it to subsequent sections of 
   #the main panel.
   
   subsetted <- reactiveValues(data = NULL)
   
+  #Analyze Button Executes the Code in this Block
   observeEvent(input$analyze,{
 
 # Subset Categorical Variables 
@@ -266,14 +298,95 @@ server <- function(input, output, session) {
 
   })
   
+  #Create a renderDataTable() object to display Data
+  #on Download Data Panel
+  output$DT_download <- renderDataTable(subsetted$data)
+  
+  #Download Handler for the Data
+  output$downloadData <- downloadHandler(
+    filename = function() {
+      paste("store_data-", Sys.Date(), ".csv", sep="")
+    },
+    content = function(file) {
+      write.csv(subsetted$data, file)
+    }
+  )
+  
+  # Update Categorical Variable Menus on Data
+  # Exploration Tab for Summary Data 
+  output$cat_sum_select_controls <- renderUI({ 
+    if (input$cat_sum_choice == "1-Way Contingency Table") { 
+      
+      tagList( 
+        selectizeInput(inputId = "cvar_out_1",  label = "Select Summary Variable",
+                       choices = cvars, selected = NULL), 
+      ) 
+    } 
+    
+    else if (input$cat_sum_choice == "2-Way Contingency Table") { 
+      
+      tagList( 
+        selectizeInput(inputId = "cvar_out_1",  label = "Select Summary Variable",
+                       choices = cvars, selected = NULL),  
+        #          observeEvent({})
+        
+        selectizeInput(inputId = "cvar_out_2", label = "Select Group Variable",
+                       choices = cvars , selected = NULL
+        ), 
+      ) 
+    } 
+  }) 
+  
+  
+  # Update Categorical Variable Menus on Data
+  # Exploration Tab for Graphical Summaries 
+  output$cat_graph_select_controls <- renderUI({ 
+    if (input$cat_plot_choice == "Simple Bar Plot") { 
+      
+      tagList( 
+        selectizeInput(inputId = "cvar_out_3",  label = "Select Summary Variable",
+                       choices = cvars,selected = NULL), 
+      ) 
+    } 
+    
+    else if (input$cat_plot_choice == "Grouped Bar Plot") { 
+      
+      tagList( 
+        selectizeInput(inputId = "cvar_out_3",  label = "Select Summary Variable",
+                       choices = cvars,selected = NULL),  
+        #          observeEvent({})
+        
+        selectizeInput(inputId = "cvar_out_4", label = "Select Group Variable",
+                       choices = cvars , selected = NULL
+        ), 
+      ) 
+    } 
+  }) 
+  
 
+        
+    #Create Categorical Data Summary Table
+        observeEvent(input$cat_sum_display,{
+          
+          output$DT_cat_sum <- renderTable({
+            if (input$cat_sum_choice == "1-Way Contingency Table") {
+              table(subsetted$data[[input$cvar_out_1]])
+            
+              } else if (input$cat_sum_choice == "2-Way Contingency Table") {
+              table(subsetted$data[[input$cvar_out_1]], subsetted$data[[input$cvar_out_2]])
+            }
+          })
+        
+        })
+        
+        
+ 
 
   
-  #Create a renderDataTable() object to display the data
-  #          output$DTO_download <- renderDataTable()
-  
-  }
+  } #server end 
 
 
 # Run the application
 shinyApp(ui = ui, server = server)
+
+
