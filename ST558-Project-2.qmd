@@ -9,6 +9,7 @@ editor: visual
 
 library(cdlTools)
 library(dplyr)
+library(gt)
 library(gtsummary)
 library(knitr)
 library(lubridate)
@@ -62,6 +63,10 @@ cat("1-way Contingency Table for Category", "\n")
 table(store_dat$Category)
 cat("\n")
 
+store_dat %>% 
+  tabyl(Category) %>% 
+  gt(rowname_col = "Category") 
+
 cat("1-way Contingency for Table for Region", "\n")
 table(store_dat$Region)
 cat("\n")
@@ -78,6 +83,12 @@ cat("\n")
 cat("2-way Contingency Table for Category and Region ", "\n")
   table(store_dat$Category, store_dat$Region)
 cat("\n")
+
+store_dat %>% 
+  tabyl(Category, Region) %>% 
+  gt(rowname_col = "Category") 
+
+
 
 cat("2-way Contingency Table for Category and Sub-Category ", "\n")
 table(store_dat$Category, store_dat$Sub_Category)

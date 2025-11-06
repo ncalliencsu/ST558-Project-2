@@ -1,11 +1,15 @@
-library(bslib)
-library(shiny)
-library(shinyalert)
-library(tidyverse)
-library(gtsummary)
-library(ggplot2)      # For plotting
-library(DT)           # For interactive data tables
-library(zipcodeR)
+library(bslib)        # For building UI's easier
+library(DT)           # For interactive data tableslibrary(janitor)
+library(ggplot2)      # For making nice versatile plots
+library(gt)           # For making formatted display tables
+library(gtsummary)    # For making presentation ready numerical summaries
+library(janitor)      # For examining and cleaning dirty data
+library(plotly)       # For interactive ggplots
+library(shiny)        # For building Shiny Apps
+library(shinyalert)   # For creating popup messages in Shiny
+library(tidyverse)    # For making working with data easy
+library(tigris)       # For making Chloropeth Map
+library(zipcodeR)     # For working with Zip Code data
 
 source("project2_2helper.R")
 
@@ -25,12 +29,12 @@ ui <- fluidPage(
       selectizeInput(
         inputId = "num_var_1",
         label = "Num Variable 1",
-        choices = c(NA, nvars),
-        selected = NA
+        choices = c("All", nvars),
+        selected = "All"
       ),
       
       #Only show this panel if a numeric variable is selected
-      conditionalPanel(condition = "input.num_var_1 != 'NA'",
+      conditionalPanel(condition = "input.num_var_1 != 'All'",
                        sliderInput("slider_nv_1", label = "Range for Num Variable 1",
                                    min = 0 , max = 25000,
                                    value = 250)),
@@ -38,12 +42,12 @@ ui <- fluidPage(
       selectizeInput(
         inputId = "num_var_2",
         label = "Num Variable 2",
-        choices = c(NA, nvars),
-        selected = NA
+        choices = c("All", nvars),
+        selected = "All"
       ),
       
       #Only show this panel if a numeric variable is selected
-      conditionalPanel(condition = "input.num_var_2 != 'NA'",
+      conditionalPanel(condition = "input.num_var_2 != 'All'",
                        sliderInput("slider_nv_2", label = "Range for Num Variable 2",
                                    min = -10000 , max = 10000,
                                    value = 40)),
@@ -106,7 +110,7 @@ ui <- fluidPage(
                   tabPanel("Categorical Variable Analysis",
 
                   ui <- page_fillable(
-                    # Numeric Summaries
+                    # Categorical Variable Numeric Summaries
                      card(
                       card_header("Data Summary"),
                       layout_sidebar(
@@ -114,26 +118,27 @@ ui <- fluidPage(
                           bg = "lightgrey",
                           
                           selectizeInput(
-                            inputId = "cat_sum_choice",
+                            inputId = "cs_choice",
                             label = "Select Summary Type",
                             choices = c(NA, cat_summaries) ,
                             selected = NULL
                           ),
                           
                           #Dynamic UI for Categorical Numerical Summaries Selection
-                          uiOutput(outputId = "cat_sum_select_controls"),
+                          uiOutput(outputId = "cs_select"),
  
-                          actionButton(inputId = "cat_sum_display",label = "Display Summary"),
+                          actionButton(inputId = "cs_display",label = "Display Summary"),
                           ),
                           
                           #Dynamic UI for Categorical Numerical Summaries Output
-                          uiOutput("DT_cat_sum")
+                          #uiOutput("DT_cat_sum")
+                          gt_output("cs_table") 
                         
                         ), #layout sidebar
 
                     ), #card
 
-                  # Graphical Summaries
+                  # Categorical Variable Graphical Summaries
                     card(
                       card_header("Graphical Summary"),
                       layout_sidebar(
@@ -141,20 +146,20 @@ ui <- fluidPage(
                           bg = "lightgrey",
                           
                           selectizeInput(
-                            inputId = "cat_plot_choice",
+                            inputId = "cg_choice",
                             label = "Select Chart Type",
                             choices = c(NA, cat_charts) ,
                             selected = NULL
                             ),
                           
                           #Dynamic UI for Categorical Graphical Summary Selection
-                          uiOutput("cat_graph_select_controls"),
+                          uiOutput("cg_select"),
                           
-                          actionButton(inputId = "cat_plot_display",label = "Display Plot")
+                          actionButton(inputId = "cg_display",label = "Display Plot")
                           ), #sidebar
                        
-                          "Main",
-                          plotOutput("plot_exp_cat")
+                          plotOutput("cg_plot")
+                        
                         ), #layout
                       ),
                   )  #page fillable
@@ -162,9 +167,70 @@ ui <- fluidPage(
                   ), #tabPanel Categorical Variables
 
 
-####################Numeric Variable Analysis##################
+####################Numeric Variable Analysis####################################################################
 
+                  tabPanel("Numeric Variable Analysis",
 
+                  ui <- page_fillable(
+                    # Numeric Variable Summaries
+                     card(
+                      card_header("Data Summary"),
+                      layout_sidebar(
+                        sidebar = sidebar(
+                          bg = "lightgrey",
+                          
+                          selectizeInput(
+                            inputId = "nv_out_1",
+                            label = "Select Summary Variable",
+                            choices = c(NA, nvars),
+                            selected = NULL
+                          ),
+                          
+                          selectizeInput(
+                            inputId = "cv_out_5",
+                            label = "Select Categorical Variable",
+                            choices = c(NA, cvars),
+                            selected = NULL
+                          ),
+ 
+                          actionButton(inputId = "ns_display",label = "Display Summary"),
+                          ),
+                          
+                          #Dynamic UI for Numerical Summaries Output
+                           tableOutput("ns_table") 
+#                          gt_output("ns_table")
+                        
+                        ), #layout sidebar
+
+                    ), #card
+
+                  # Numeric Variable Graphical Summaries
+                    card(
+                      card_header("Graphical Summary"),
+                      layout_sidebar(
+                        sidebar = sidebar(
+                          bg = "lightgrey",
+                          
+                          selectizeInput(
+                            inputId = "ng_choice",
+                            label = "Select Chart Type",
+                            choices = c(NA, num_charts) ,
+                            selected = NULL
+                            ),
+                          
+                          #Dynamic UI for Numeric Graphical Summary Selection
+                          uiOutput("ng_select"),
+
+                          actionButton(inputId = "ng_display",label = "Display Plot")
+                          ), #sidebar
+                       
+                          plotlyOutput("ng_plot")
+                        
+                        ), #layout
+                      ),
+                  )  #page fillable
+                  
+                  ), #tabPanel Numeric Variables
                   ) #tabsetPanel Data Exploration
               
         ) # tabPanel Data Exploration
@@ -194,7 +260,7 @@ server <- function(input, output, session) {
     vals <-c(0,0,0)
     
     if(input$num_var_1 == "Sales") {
-      vals = c(4,23000,55)
+      vals = c(0,23000,55)
     } 
     else if(input$num_var_1 == "Quantity") {
       vals = c(1,14,3)
@@ -217,7 +283,7 @@ server <- function(input, output, session) {
     vals <-c(0,0,0)
     
     if(input$num_var_2 == "Sales") {
-      vals = c(4,23000,55)
+      vals = c(0,23000,55)
     } 
     else if(input$num_var_2 == "Quantity") {
       vals = c(1,14,3)
@@ -268,7 +334,8 @@ server <- function(input, output, session) {
     } else {
       reg_subset <- cvars_2[5]
     }
-    num_vars <- c(input$num_var_1, input$num_var_2)
+    num_var_1 <- input$num_var_1
+    num_var_2 <- input$num_var_2
     
     subset1 <- my_data |>
       filter(
@@ -286,10 +353,17 @@ server <- function(input, output, session) {
      # Quantity, Discount and Profit.
      
       ) %>%
-      {if("Sales" %in% num_vars) filter(., Sales > 0) else .} %>%
-      {if("Quantity" %in% num_vars) filter(., Quantity > 0) else .} %>%
-      {if("Discount" %in% num_vars) filter(., Discount) else .} %>%
-      {if("Profit" %in% num_vars) filter(., Profit) else .}
+      {if("Sales" %in% num_var_1) filter(., Sales <= input$slider_nv_1) else .} %>%
+      {if("Sales" %in% num_var_2) filter(., Sales <= input$slider_nv_2) else .} %>%
+      
+      {if("Quantity" %in% num_var_1) filter(., Quantity <= input$slider_nv_1) else .} %>%
+      {if("Quantity" %in% num_var_2) filter(., Quantity <= input$slider_nv_2) else .} %>%
+
+      {if("Discount" %in% num_var_1) filter(., Discount <= input$slider_nv_1) else .} %>%
+      {if("Discount" %in% num_var_2) filter(., Discount <= input$slider_nv_2) else .} %>%
+      
+      {if("Profit" %in% num_var_1) filter(., Profit <= input$slider_nv_1) else .} %>%
+      {if("Profit" %in% num_var_2) filter(., Profit <= input$slider_nv_2) else .}      
     
     #***You now need to update the data_subset reactive value object***#
     #the data argument should be updated to be the subsetted_data
@@ -314,23 +388,23 @@ server <- function(input, output, session) {
   
   # Update Categorical Variable Menus on Data
   # Exploration Tab for Summary Data 
-  output$cat_sum_select_controls <- renderUI({ 
-    if (input$cat_sum_choice == "1-Way Contingency Table") { 
+  output$cs_select <- renderUI({ 
+    if (input$cs_choice == "1-Way Contingency Table") { 
       
       tagList( 
-        selectizeInput(inputId = "cvar_out_1",  label = "Select Summary Variable",
+        selectizeInput(inputId = "cv_out_1",  label = "Select Summary Variable",
                        choices = cvars, selected = NULL), 
       ) 
     } 
     
-    else if (input$cat_sum_choice == "2-Way Contingency Table") { 
+    else if (input$cs_choice == "2-Way Contingency Table") { 
       
       tagList( 
-        selectizeInput(inputId = "cvar_out_1",  label = "Select Summary Variable",
+        selectizeInput(inputId = "cv_out_1",  label = "Select Summary Variable",
                        choices = cvars, selected = NULL),  
-        #          observeEvent({})
+
         
-        selectizeInput(inputId = "cvar_out_2", label = "Select Group Variable",
+        selectizeInput(inputId = "cv_out_2", label = "Select Group Variable",
                        choices = cvars , selected = NULL
         ), 
       ) 
@@ -338,25 +412,25 @@ server <- function(input, output, session) {
   }) 
   
   
-  # Update Categorical Variable Menus on Data
-  # Exploration Tab for Graphical Summaries 
-  output$cat_graph_select_controls <- renderUI({ 
-    if (input$cat_plot_choice == "Simple Bar Plot") { 
+  # Update Categorical Variable Menus on Data Exploration Tab for 
+  # Graphical Summaries based on Plot Type Selected 
+  output$cg_select <- renderUI({ 
+    if (input$cg_choice == "Simple Bar Plot") { 
       
       tagList( 
-        selectizeInput(inputId = "cvar_out_3",  label = "Select Summary Variable",
+        selectizeInput(inputId = "cv_out_3",  label = "Select Summary Variable",
                        choices = cvars,selected = NULL), 
       ) 
     } 
     
-    else if (input$cat_plot_choice == "Grouped Bar Plot") { 
+    else if (input$cg_choice == "Grouped Bar Plot") { 
       
       tagList( 
-        selectizeInput(inputId = "cvar_out_3",  label = "Select Summary Variable",
+        selectizeInput(inputId = "cv_out_3",  label = "Select Summary Variable",
                        choices = cvars,selected = NULL),  
-        #          observeEvent({})
+
         
-        selectizeInput(inputId = "cvar_out_4", label = "Select Group Variable",
+        selectizeInput(inputId = "cv_out_4", label = "Select Group Variable",
                        choices = cvars , selected = NULL
         ), 
       ) 
@@ -364,26 +438,209 @@ server <- function(input, output, session) {
   }) 
   
 
-        
     #Create Categorical Data Summary Table
-        observeEvent(input$cat_sum_display,{
-          
-          output$DT_cat_sum <- renderTable({
-            if (input$cat_sum_choice == "1-Way Contingency Table") {
-              table(subsetted$data[[input$cvar_out_1]])
-            
-              } else if (input$cat_sum_choice == "2-Way Contingency Table") {
-              table(subsetted$data[[input$cvar_out_1]], subsetted$data[[input$cvar_out_2]])
-            }
-          })
+  observeEvent(input$cs_display, {
+    output$cs_table <- render_gt({
+      if (input$cs_choice == "1-Way Contingency Table") {
+        subsetted$data %>%
+          tabyl(!!sym(input$cv_out_1)) %>%
+          gt(rowname_col = input$cv_out_1) %>%
+          tab_header(
+            title = paste("1-Way Contingency Table for", input$cv_out_1)
+          )
+      } else if (input$cs_choice == "2-Way Contingency Table") {
+        ctab <- subsetted$data %>%
+          tabyl(!!sym(input$cv_out_1), !!sym(input$cv_out_2))
+        gt(ctab, rowname_col = input$cv_out_1) %>%
+          tab_spanner(
+            columns = names(ctab)[-1], # all columns except the first
+            label = input$cv_out_2
+          ) %>%
+          tab_stubhead(
+            label = input$cv_out_1
+          ) %>%
+          tab_header(
+            title = paste("2-Way Contingency Table for", input$cv_out_1, "and", input$cv_out_2)
+          )
+      }
+    })
+  })
         
-        })
-        
-        
- 
+  #Create Categorical Graphical Summary
 
-  
-  } #server end 
+    observeEvent(input$cg_display, {
+
+      output$cg_plot <- renderPlot({
+        if (input$cg_choice == "Simple Bar Plot") {
+          ggplot(data = subsetted$data, aes(x = .data[[input$cv_out_3]])) +
+            geom_bar() +
+            geom_text(stat = 'count', aes(label = ..count..), vjust = -1) +
+            labs(
+              title = paste("Count of Orders by", input$cv_out_3),
+              x = input$cv_out_1,
+              y = paste("Count by", input$cv_out_3)
+            )
+          
+        } else if (input$cg_choice == "Grouped Bar Plot") {
+          ggplot(data = subsetted$data, aes(x = .data[[input$cv_out_3]], fill = .data[[input$cv_out_4]])) +
+            geom_bar(position = "dodge") +
+            scale_fill_discrete(name = input$cv_out_4) +
+            labs(
+              title = paste("Count of Orders by", input$cv_out_4),
+              x = input$cv_out_3,
+              y = paste("Count by", input$cv_out_4)
+            )
+        }
+      })
+  })
+
+#    Create Numeric Data Summary Table
+    observeEvent(input$ns_display,{
+
+      output$ns_table <- renderTable({
+
+        subsetted$data |>
+          select(!!sym(input$nv_out_1), !!sym(input$cv_out_5)) |>
+          group_by(!!sym(input$cv_out_5)) |>
+          summarize(min = min(!!sym(input$nv_out_1)),
+                    q1 = quantile(!!sym(input$nv_out_1), 0.25),
+                    median = median(!!sym(input$nv_out_1)),
+                    mean = mean(!!sym(input$nv_out_1)),
+                    q3 = quantile(!!sym(input$nv_out_1), 0.75),
+                    max = max(!!sym(input$nv_out_1))) 
+
+        })
+    })
+    
+
+    # Update Numeric Variable Menus on Data Exploration Tab for 
+    # Graphical Summaries based on Type of Plot Selected 
+    output$ng_select <- renderUI({ 
+      if (input$ng_choice == "Box Plot") { 
+        
+        tagList( 
+          selectizeInput(inputId = "cv_out_6",  label = "Select X-Axis Variable",
+                         choices = cvars,selected = NULL), 
+          selectizeInput(inputId = "nv_out_2", label = "Select Y-Axis Variable",
+                         choices = nvars, selected = NULL)
+        ) 
+      } 
+      
+      else if (input$ng_choice == "Histogram") { 
+        
+        tagList( 
+          selectizeInput(inputId = "nv_out_2",  label = "Select X-Axis Variable",
+                         choices = nvars,selected = NULL),  
+          selectizeInput(inputId = "cv_out_6", label = "Select Fill Variable",
+                         choices = cvars, selected = NULL), 
+        ) 
+      } 
+      
+      else if (input$ng_choice == "Scatter Plot") { 
+        
+        tagList( 
+          selectizeInput(inputId = "cv_out_6",  label = "Select X-Axis Variable",
+                         choices = c("Order_Date", "Month", "Year"), selected = "Year"),  
+          selectizeInput(inputId = "nv_out_2", label = "Select Y-Axis Variable",
+                         choices = nvars, selected = NULL), 
+          selectizeInput(inputId = "cv_out_7", label = "Select Shading Variable",
+                         choices = cvars, selected = NULL), 
+          
+          checkboxInput(inputId = "facet_wrap", label = "Facet Wrap"),
+          selectizeInput(inputId = "cv_out_8", label = "Select Wrap Variable",
+                         choices = cvars, selected = NULL)
+          
+        ) 
+      } 
+      
+      else if (input$ng_choice == "Chloropeth Map") { 
+        
+        tagList( 
+          selectizeInput(inputId = "nv_out_2", label = "Select Gradient Variable",
+                         choices = nvars, selected = NULL), 
+         ) 
+      } 
+      
+      
+    }) 
+          
+          
+    #Create Numerical Graphical Summary
+    
+    observeEvent(input$ng_display, {
+      
+      output$ng_plot <- renderPlotly({
+        if (input$ng_choice == "Box Plot") {
+          
+          bplot <- ggplot(data = subsetted$data, 
+                      aes(x = .data[[input$cv_out_6]], y = .data[[input$nv_out_2]], 
+                        fill = .data[[input$cv_out_6]])) + geom_boxplot() + 
+                          labs(title = paste("Boxplot of ", input$nv_out_2, "by" , input$cv_out_6), 
+                                x = input$cv_out_6 , y = input$nv_out_2) 
+          
+          ggplotly(bplot)
+
+        } else if (input$ng_choice == "Histogram") {
+          
+          hplot <- ggplot(data = subsetted$data, 
+                    aes(x =  log (.data[[input$nv_out_2]]), fill = .data[[input$cv_out_6]])) + 
+                      geom_histogram(aes(y = ..density..), color = 'black', position = "identity") +
+                        labs(title = paste("Distribution of ", input$nv_out_2, "by", input$cv_out_6))
+                             
+          
+          ggplotly(hplot)
+
+        } else if (input$ng_choice == "Scatter Plot") {
+          
+            if (input$facet_wrap == TRUE) {
+                # Generate scatter plot with facet_wrap
+                scplot_fw <- ggplot(data = subsetted$data,
+                              aes(x = .data[[input$cv_out_6]], y = .data[[input$nv_out_2]], color = .data[[input$cv_out_7]])) + 
+                                geom_point() + geom_jitter(width = 0.5, alpha = 0.3) + 
+                                  labs(title = paste("Scatterplot of ", input$nv_out_2, " by ", 
+                                     input$cv_out_7, " and ", input$cv_8," over ",input$cv_out_6,"s", sep = "")) +
+                                      facet_wrap(~ get(input$cv_out_8), scales = "free_y") +
+                                        theme(axis.text.x = element_text(angle = 90, vjust=.5, hjust=1))
+                
+                ggplotly(scplot_fw)
+                
+              } else {
+                # Generate regular scatter plot
+                scplot <- ggplot(data = subsetted$data,
+                                 aes(x = .data[[input$cv_out_6]], y = .data[[input$nv_out_2]], color = .data[[input$cv_out_7]])) + 
+                                  geom_point() + geom_jitter(width = 0.5, alpha = 0.3) + 
+                                    labs(title = paste("Scatterplot of ", input$nv_out_2, " by ", 
+                                     input$cv_out_7, " over ",input$cv_out_6,"s", sep = ""))
+                
+                ggplotly(scplot)
+              }
+        } else if (input$ng_choice == "Chloropeth Map"){
+              
+          FIPS_fill = aggregate(my_data$Sales, list(my_data$STATEFIPS), FUN = sum) |>
+            rename(`STATEFP` = `Group.1`, Sales = x)
+          
+          states <- states(cb = TRUE, class = "sf") |>
+            filter(!as.numeric(STATEFP) %in% c(2, 15, 60, 66, 69, 72, 78)) |> # lower 48 and DC only
+            left_join(FIPS_fill, by = "STATEFP")
+          
+          states |>
+            ggplot(aes(fill = Sales)) +
+            geom_sf() + 
+            theme_test() +
+            scale_fill_gradientn("Sales", colours = rev(scales::hue_pal()(5))) +
+            labs(title = "Gradient Map of Store Sales by State") |> ggplotly()
+          
+          
+          
+          
+            }
+          
+        }) #renderPlotly
+      
+    })  #observeEvent        
+          
+ 
+  } #server end
 
 
 # Run the application
