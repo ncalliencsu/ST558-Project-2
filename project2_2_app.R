@@ -1,5 +1,6 @@
 library(bslib)        # For building UI's easier
 library(DT)           # For interactive data tableslibrary(janitor)
+library(dplyr)        # Renaming variables instead of rename in Base R
 library(ggplot2)      # For making nice versatile plots
 library(gt)           # For making formatted display tables
 library(gtsummary)    # For making presentation ready numerical summaries
@@ -14,7 +15,7 @@ library(zipcodeR)     # For working with Zip Code data
 source("project2_2helper.R")
 
 
-########################################################################################################
+##########################################################################################################
 #                        UI Definition
 ##########################################################################################################  
 ui <- fluidPage(
@@ -245,9 +246,9 @@ ui <- fluidPage(
 my_data <-readRDS(file = "store_data.RDS")
 
 
-############################################################
+##########################################################################################################
 #                      Server Definition
-############################################################  
+##########################################################################################################
 
 # Define server logic 
 server <- function(input, output, session) {
@@ -311,7 +312,7 @@ server <- function(input, output, session) {
   #Analyze Button Executes the Code in this Block
   observeEvent(input$analyze,{
 
-# Subset Categorical Variables 
+# Subset Numeric and Categorical Variables 
 
     if(input$category == "All"){
       cat_subset <- cvars_1[-1]
@@ -340,11 +341,11 @@ server <- function(input, output, session) {
     subset1 <- my_data |>
       filter(
 
-    #Determine which elements of cvars[] are present in xxx_subset.
-    #Return a logical vector of the same length as cvars[], with TRUE
-    #for elements found in xxx_subset and FALSE otherwise. The filter() 
-    #function from dplyr filters rows in a data frame based on conditions 
-    #applied to its columns.
+  #Determine which elements of cvars[] are present in xxx_subset.
+  #Return a logical vector of the same length as cvars[], with TRUE
+  #for elements found in xxx_subset and FALSE otherwise. The filter() 
+  #function from dplyr filters rows in a data frame based on conditions 
+  #applied to its columns.
     
       Category %in% cat_subset,
       Region %in% reg_subset,
@@ -439,78 +440,110 @@ server <- function(input, output, session) {
   
 
     #Create Categorical Data Summary Table
-  observeEvent(input$cs_display, {
     output$cs_table <- render_gt({
-      if (input$cs_choice == "1-Way Contingency Table") {
+
+      validate(
+        need(!is.null(subsetted$data), "Please select your variables, subset, and click the 'Analyze Data' button."
+             ))
+      
+      if (isolate(input$cs_choice) == "1-Way Contingency Table") {
+        
+        ivar1 <- isolate(input$cv_out_1)
+        
         subsetted$data %>%
-          tabyl(!!sym(input$cv_out_1)) %>%
-          gt(rowname_col = input$cv_out_1) %>%
+          tabyl(!!sym(ivar1)) %>%
+          gt(rowname_col = ivar1) %>%
           tab_header(
-            title = paste("1-Way Contingency Table for", input$cv_out_1)
+            title = paste("1-Way Contingency Table for", ivar1)
           )
-      } else if (input$cs_choice == "2-Way Contingency Table") {
+        
+      } else if (isolate(input$cs_choice) == "2-Way Contingency Table") {
+
+          ivar1 <- isolate(input$cv_out_1)
+          ivar2 <- isolate(input$cv_out_2)
+          
+          validate(
+          need(ivar1 != ivar2, "Please select a different grouping variable."
+                  )
+           )
+        
+
         ctab <- subsetted$data %>%
-          tabyl(!!sym(input$cv_out_1), !!sym(input$cv_out_2))
-        gt(ctab, rowname_col = input$cv_out_1) %>%
+          tabyl(!!sym(ivar1), !!sym(ivar2))
+        gt(ctab, rowname_col = ivar1) %>%
           tab_spanner(
             columns = names(ctab)[-1], # all columns except the first
-            label = input$cv_out_2
+            label = ivar2
           ) %>%
           tab_stubhead(
-            label = input$cv_out_1
+            label = ivar1
           ) %>%
           tab_header(
-            title = paste("2-Way Contingency Table for", input$cv_out_1, "and", input$cv_out_2)
+            title = paste("2-Way Contingency Table for", ivar1, "and", ivar2)
           )
       }
-    })
-  })
+    })    %>% bindEvent(input$cs_display)
+
+      #Create Categorical Graphical Summary
+
+      output$cg_plot <- renderPlot({ input$cg_display
         
-  #Create Categorical Graphical Summary
+        validate(
+          need(!is.null(subsetted$data), "Please select your variables, subset, and click the 'Analyze Data' button."
+          ))
+        
+        if (isolate(input$cg_choice) == "Simple Bar Plot") {
+          
+          ivar3 <- isolate(input$cv_out_3)
 
-    observeEvent(input$cg_display, {
-
-      output$cg_plot <- renderPlot({
-        if (input$cg_choice == "Simple Bar Plot") {
-          ggplot(data = subsetted$data, aes(x = .data[[input$cv_out_3]])) +
+          ggplot(data = subsetted$data, aes(x = !!sym(ivar3))) +
             geom_bar() +
             geom_text(stat = 'count', aes(label = ..count..), vjust = -1) +
             labs(
-              title = paste("Count of Orders by", input$cv_out_3),
-              x = input$cv_out_1,
-              y = paste("Count by", input$cv_out_3)
+              title = paste("Count of Orders by", ivar3),
+              x = ivar3,
+              y = paste("Count by", ivar3)
             )
           
-        } else if (input$cg_choice == "Grouped Bar Plot") {
-          ggplot(data = subsetted$data, aes(x = .data[[input$cv_out_3]], fill = .data[[input$cv_out_4]])) +
+        } else if (isolate(input$cg_choice) == "Grouped Bar Plot") {
+          
+          ivar3 <- isolate(input$cv_out_3)
+          ivar4 <- isolate(input$cv_out_4)
+
+          ggplot(data = subsetted$data, aes(x = !!sym(ivar3), fill = !!sym(ivar4))) +
             geom_bar(position = "dodge") +
-            scale_fill_discrete(name = input$cv_out_4) +
+            scale_fill_discrete(name = ivar4) +
             labs(
-              title = paste("Count of Orders by", input$cv_out_4),
-              x = input$cv_out_3,
-              y = paste("Count by", input$cv_out_4)
+              title = paste("Count of Orders by", ivar4),
+              x = ivar3,
+              y = paste("Count by", ivar4)
             )
         }
-      })
-  })
+      }) %>% bindEvent(input$cg_display)
+
 
 #    Create Numeric Data Summary Table
-    observeEvent(input$ns_display,{
 
-      output$ns_table <- renderTable({
+      output$ns_table <- renderTable({ 
+        
+        validate(
+          need(!is.null(subsetted$data), "Please select your variables, subset, and click the 'Analyze Data' button."
+          ))
+        
+        ivar1 <- isolate(input$nv_out_1)
+        ivar5 <- isolate(input$cv_out_5)
 
         subsetted$data |>
-          select(!!sym(input$nv_out_1), !!sym(input$cv_out_5)) |>
-          group_by(!!sym(input$cv_out_5)) |>
-          summarize(min = min(!!sym(input$nv_out_1)),
-                    q1 = quantile(!!sym(input$nv_out_1), 0.25),
-                    median = median(!!sym(input$nv_out_1)),
-                    mean = mean(!!sym(input$nv_out_1)),
-                    q3 = quantile(!!sym(input$nv_out_1), 0.75),
-                    max = max(!!sym(input$nv_out_1))) 
+          select(!!sym(ivar1), !!sym(ivar5)) |>
+          group_by(!!sym(ivar5)) |>
+          summarize(min = min(!!sym(ivar1)),
+                    q1 = quantile(!!sym(ivar1), 0.25),
+                    median = median(!!sym(ivar1)),
+                    mean = mean(!!sym(ivar1)),
+                    q3 = quantile(!!sym(ivar1), 0.75),
+                    max = max(!!sym(ivar1))) 
 
-        })
-    })
+        }) %>% bindEvent(input$ns_display)
     
 
     # Update Numeric Variable Menus on Data Exploration Tab for 
@@ -567,39 +600,53 @@ server <- function(input, output, session) {
           
     #Create Numerical Graphical Summary
     
-    observeEvent(input$ng_display, {
-      
       output$ng_plot <- renderPlotly({
-        if (input$ng_choice == "Box Plot") {
+        
+        validate(
+          need(!is.null(subsetted$data), "Please select your variables, subset, and click the 'Analyze Data' button."
+          ))
+        
+        if (isolate(input$ng_choice) == "Box Plot") {
+          
+          ivar2 <- input$nv_out_2
+          ivar6 <- input$cv_out_6
           
           bplot <- ggplot(data = subsetted$data, 
-                      aes(x = .data[[input$cv_out_6]], y = .data[[input$nv_out_2]], 
-                        fill = .data[[input$cv_out_6]])) + geom_boxplot() + 
-                          labs(title = paste("Boxplot of ", input$nv_out_2, "by" , input$cv_out_6), 
-                                x = input$cv_out_6 , y = input$nv_out_2) 
+                      aes(x = !!sym(ivar6), y = !!sym(ivar2), 
+                        fill = !!sym(ivar6))) + geom_boxplot() + 
+                          labs(title = paste("Boxplot of ", ivar2, "by" , ivar6), 
+                                x = ivar6 , y = ivar2) 
           
           ggplotly(bplot)
 
-        } else if (input$ng_choice == "Histogram") {
+        } else if (isolate(input$ng_choice) == "Histogram") {
+          
+          ivar2 <- input$nv_out_2
+          ivar6 <- input$cv_out_6          
           
           hplot <- ggplot(data = subsetted$data, 
-                    aes(x =  log (.data[[input$nv_out_2]]), fill = .data[[input$cv_out_6]])) + 
+                    aes(x =  log (!!sym(ivar2)), fill = !!sym(ivar6))) + 
                       geom_histogram(aes(y = ..density..), color = 'black', position = "identity") +
-                        labs(title = paste("Distribution of ", input$nv_out_2, "by", input$cv_out_6))
+                        labs(title = paste("Distribution of ", ivar2, "by", ivar6))
                              
           
           ggplotly(hplot)
 
-        } else if (input$ng_choice == "Scatter Plot") {
+        } else if (isolate(input$ng_choice) == "Scatter Plot") {
+          
+          ivar2 <- input$nv_out_2
+          ivar6 <- input$cv_out_6     
+          ivar7 <- input$cv_out_7
+          ivar8 <- input$cv_out_8
           
             if (input$facet_wrap == TRUE) {
                 # Generate scatter plot with facet_wrap
                 scplot_fw <- ggplot(data = subsetted$data,
-                              aes(x = .data[[input$cv_out_6]], y = .data[[input$nv_out_2]], color = .data[[input$cv_out_7]])) + 
+                              aes(x = !!sym(ivar6), y = !!sym(ivar2), color = !!sym(ivar7))) + 
                                 geom_point() + geom_jitter(width = 0.5, alpha = 0.3) + 
-                                  labs(title = paste("Scatterplot of ", input$nv_out_2, " by ", 
-                                     input$cv_out_7, " and ", input$cv_8," over ",input$cv_out_6,"s", sep = "")) +
-                                      facet_wrap(~ get(input$cv_out_8), scales = "free_y") +
+                                  labs(title = paste("Scatterplot of ", ivar2, " by ", 
+                                     ivar7, " and ", ivar8," over ",ivar6,"s", sep = "")) +
+                                      facet_wrap(~ get(ivar8), scales = "free_y") +
                                         theme(axis.text.x = element_text(angle = 90, vjust=.5, hjust=1))
                 
                 ggplotly(scplot_fw)
@@ -607,39 +654,37 @@ server <- function(input, output, session) {
               } else {
                 # Generate regular scatter plot
                 scplot <- ggplot(data = subsetted$data,
-                                 aes(x = .data[[input$cv_out_6]], y = .data[[input$nv_out_2]], color = .data[[input$cv_out_7]])) + 
+                                 aes(x = !!sym(ivar6), y = !!sym(ivar2), color = !!sym(ivar7))) + 
                                   geom_point() + geom_jitter(width = 0.5, alpha = 0.3) + 
-                                    labs(title = paste("Scatterplot of ", input$nv_out_2, " by ", 
-                                     input$cv_out_7, " over ",input$cv_out_6,"s", sep = ""))
+                                    labs(title = paste("Scatterplot of ", ivar2, " by ", 
+                                     ivar7, " over ",ivar6,"s", sep = ""))
                 
                 ggplotly(scplot)
               }
-        } else if (input$ng_choice == "Chloropeth Map"){
-              
-          FIPS_fill = aggregate(my_data$Sales, list(my_data$STATEFIPS), FUN = sum) |>
-            rename(`STATEFP` = `Group.1`, Sales = x)
+          
+        } else if (isolate(input$ng_choice) == "Chloropeth Map"){
+          
+          ivar2 <- input$nv_out_2
+
+          FIPS_fill = aggregate(my_data[[ivar2]], list(my_data$STATEFIPS), FUN = sum) 
+            colnames(FIPS_fill) <- c("STATEFP", ivar2)
           
           states <- states(cb = TRUE, class = "sf") |>
             filter(!as.numeric(STATEFP) %in% c(2, 15, 60, 66, 69, 72, 78)) |> # lower 48 and DC only
             left_join(FIPS_fill, by = "STATEFP")
           
-          states |>
-            ggplot(aes(fill = Sales)) +
-            geom_sf() + 
-            theme_test() +
-            scale_fill_gradientn("Sales", colours = rev(scales::hue_pal()(5))) +
-            labs(title = "Gradient Map of Store Sales by State") |> ggplotly()
-          
-          
-          
-          
+                chlorplot <- states |>
+                        ggplot(aes(fill = !!sym(ivar2))) +
+                          geom_sf() + 
+                           theme_test() +
+                            scale_fill_gradientn(ivar2, colours = rev(scales::hue_pal()(5))) +
+                              labs(title = paste("Gradient Map of Store", ivar2)) 
+                
+                ggplotly(chlorplot)
             }
           
-        }) #renderPlotly
+        }) %>% bindEvent(input$ng_display)
       
-    })  #observeEvent        
-          
- 
   } #server end
 
 
