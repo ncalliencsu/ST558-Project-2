@@ -3,7 +3,7 @@
 #purpose: Project 2
 # US Superstore Data
 
-library(bslib)        # For building UI's easier
+ library(bslib)        # For building UI's easier
  library(gt)           # For making formatted contingency tables
  library(janitor)      # For examining and cleaning dirty data
  library(plotly)       # For interactive ggplots
