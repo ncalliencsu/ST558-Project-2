@@ -14,7 +14,7 @@ library(tidyverse)    # For making working with data easy
 library(tigris)       # For making Chloropeth Map
 library(zipcodeR)     # For working with Zip Code data
 
-source("project2_2helper.R")
+source("project2_helper.R")
 
 
 ##########################################################################################################
@@ -565,6 +565,11 @@ server <- function(input, output, session) {
           
           ivar3 <- isolate(input$cv_out_3)
           ivar4 <- isolate(input$cv_out_4)
+          
+          validate(
+            need(ivar3 != ivar4, "Please select a different grouping variable."
+            )
+          )
 
               ggplot(data = subsetted$data, aes(x = !!sym(ivar3), fill = !!sym(ivar4))) +
                       geom_bar(position = "dodge") +
@@ -688,10 +693,19 @@ server <- function(input, output, session) {
           ivar2 <- input$nv_out_2
           ivar6 <- input$cv_out_6          
           
-          hplot <- ggplot(data = subsetted$data, 
-                    aes(x =  log (!!sym(ivar2)), fill = !!sym(ivar6))) + 
-                      geom_histogram(aes(y = ..density..), color = 'black', position = "identity") +
-                        labs(title = paste("Distribution of ", ivar2, "by", ivar6))
+          if (ivar2 %in% c("Sales", "Profit")) {
+            hplot <- ggplot(data = subsetted$data, 
+              aes(x = log(!!sym(ivar2)), fill = !!sym(ivar6))) + 
+                geom_histogram(aes(y = ..density..), color = 'black', position = "identity") +
+                  labs(title = paste("Distribution of", ivar2, "by", ivar6))
+
+        } else {
+            hplot <- ggplot(data = subsetted$data, 
+              aes(x =  (!!sym(ivar2)), fill = !!sym(ivar6))) + 
+                geom_histogram(aes(y = ..density..), color = 'black', position = "identity") +
+                  labs(title = paste("Distribution of ", ivar2, "by", ivar6))  
+            
+          }
                              
           
           ggplotly(hplot)
