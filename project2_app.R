@@ -429,7 +429,7 @@ server <- function(input, output, session) {
 
   })
   
-  #Create a renderDataTable() object to display Data
+  #Create a DataTable object to display Data
   #on Download Data Panel
   output$DT_download <- DT::renderDT({
     
