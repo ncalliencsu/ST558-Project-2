@@ -4,6 +4,7 @@
 # US Superstore Data
 
  library(bslib)        # For building UI's easier
+ library (DT)          # For making Data Tables in Shiny
  library(gt)           # For making formatted contingency tables
  library(janitor)      # For examining and cleaning dirty data
  library(plotly)       # For interactive ggplots
@@ -430,7 +431,7 @@ server <- function(input, output, session) {
   
   #Create a renderDataTable() object to display Data
   #on Download Data Panel
-  output$DT_download <- renderDataTable({
+  output$DT_download <- DT::renderDT({
     
     validate(
       need(!is.null(subsetted$data), "Please select your variables, subset, and click the 'Subset Data' button."
