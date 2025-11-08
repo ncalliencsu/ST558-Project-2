@@ -1,19 +1,20 @@
-library(bslib)        # For building UI's easier
-library(DT)           # For interactive data tables
-library(dplyr)        # Renaming variables instead of rename in Base R
-library(ggplot2)      # For making nice versatile plots
-library(gt)           # For making formatted display tables
-library(gtsummary)    # For making presentation ready numerical summaries
-library(janitor)      # For examining and cleaning dirty data
-library(plotly)       # For interactive ggplots
-library(shiny)        # For building Shiny Apps
-library(shinyalert)   # For creating popup messages in Shiny
-library(shinycssloaders)   #For loaders
-library(shinydashboard) # For hte box function
-library(tidyverse)    # For making working with data easy
-library(tigris)       # For making Chloropeth Map
-library(zipcodeR)     # For working with Zip Code data
+#author: Norman C. Allie
+#date: 11/08/2025
+#purpose: Project 2
+# US Superstore Data
 
+library(bslib)        # For building UI's easier
+ library(gt)           # For making formatted contingency tables
+ library(janitor)      # For examining and cleaning dirty data
+ library(plotly)       # For interactive ggplots
+ library(shiny)        # For building Shiny Apps
+ library(shinycssloaders)   #For loaders
+ library(shinydashboard) # For the box function
+ library(tidyverse)    # For making working with data easy
+ library(tigris)       # For making Chloropeth Map
+
+
+ # Helper File 
 source("project2_helper.R")
 
 
@@ -29,7 +30,7 @@ ui <- fluidPage(
       #Reduce Width of Sidebar
       width = 3,
       
-      #Numeric Variable Definition
+      #Numeric Variable UI
       h2("Select Numeric Variables:"),
 
       selectizeInput(
@@ -58,7 +59,7 @@ ui <- fluidPage(
                                    min = -10000 , max = 10000,
                                    value = 40)),
       
-      #Categorical Variable Definition
+      #Categorical Variable UI
       h2("Select Categorical Variables:"),
 
       selectizeInput(
@@ -75,7 +76,7 @@ ui <- fluidPage(
         selected = cvars_2[1]
       ),
       
-      #
+      # Required for Subsetting the Data
       actionButton(inputId = "subset_data",label = "Subset Data")
 
       
@@ -96,7 +97,8 @@ ui <- fluidPage(
                       width = 12,
                       fluidRow(column(width = 8, textOutput( "purpose" )),
                               column(width = 4, align = "center",
-                                     img(src="https://storage.googleapis.com/kaggle-datasets-images/422303/805812/e6738158f953eeab9dceb6fac01d6ce5/dataset-cover.jpg?t=2019-11-21-09-14-22", width=400))))),
+                                 img(src = 
+                                 "https://storage.googleapis.com/kaggle-datasets-images/422303/805812/e6738158f953eeab9dceb6fac01d6ce5/dataset-cover.jpg?t=2019-11-21-09-14-22", width=400))))),
                  
                  p(),
                 strong("Description of the Data"),
@@ -117,27 +119,29 @@ ui <- fluidPage(
                  p("The continuous variables are Sales, Quantity, Discount and Profit."),
 
                  strong("Description of the App"),
-                 p("The sidebar on this page is for selecting variables to subset the dataset. You may select two (2) 
-                   numeric variables and two (2) categorical variables to create a subset. If you select numeric 
-                   variable(s), you will see a slider appear that will allow you to filter the numeric variable(s) up 
-                   to the level(s) of the slider selected. If you select a categorical variable(s), the data will be 
-                   filtered by the selected variable(s). When you are ready to subset the data, press the 'Subset 
-                   Data' button."),
+                 p("The sidebar on this page is for selecting variables to subset the dataset. 
+                 You may select two (2) numeric variables and two (2) categorical variables to
+                 create a subset. If you select numeric variable(s), you will see a slider appear 
+                 that will allow you to filter the numeric variable(s) up to the level(s) of the 
+                 slider selected. If you select a categorical variable(s), the data will be 
+                 filtered by the selected variable(s). When you are ready to subset the data, 
+                 press the 'Subset Data' button."),
                  
-                 p("The Data Download panel allows you to view the data and provides a means for downloading the data 
-                   in csv format. The Data Exporation panel has as sub-panel for categorical variable analysis and a 
-                   sub-panel for numeric variable analysis. Each sub-panel provides a panel for summary data and a 
-                   panel for graphical output.  You can select appropriate variables using pickers available on each 
-                   sub-panel. Action buttons are provided for displaying data of interest.
-                   
-                   Note that the Chloropeth Map on the Numeric Analysis panel uses the entire dataset to render the plot. The subsetted data is not used for this function.")
+                 p("The Data Download panel allows you to view the data and provides a means for 
+                 downloading the data in csv format. The Data Exporation panel has as sub-panel 
+                 for categorical variable analysis and a sub-panel for numeric variable analysis. 
+                 Each sub-panel provides a panel for summary data and a panel for graphical output.  
+                 You can select appropriate variables using pickers available on each sub-panel. 
+                 Action buttons are provided for displaying data of interest. The numeric variable 
+                 graphical output is interactive. Note that the Chloropeth Map on the Numeric 
+                 Analysis panel uses the entire dataset to render the plot.")
                  
                  ),
 
 
        
         
-                
+        #Data Download Sub-Panel        
         tabPanel("Data Download",
                  
                  card(card_header("Data Table"),
@@ -147,7 +151,8 @@ ui <- fluidPage(
                  downloadButton("downloadData", "Download Data"),
 
                 ),
-        
+       
+        #Data Exploration Sub-Panel 
         tabPanel("Data Exploration", 
                 tabsetPanel(
                   id = "data_exp",
@@ -179,7 +184,7 @@ ui <- fluidPage(
                           ),
                           
                           #Dynamic UI for Categorical Numerical Summaries Output
-                          #uiOutput("DT_cat_sum")
+                          # gt package output for nicely formatted Contingency Tables
                           gt_output("cs_table") 
                         
                         ), #layout sidebar
@@ -247,8 +252,7 @@ ui <- fluidPage(
                           #Dynamic UI for Numerical Summaries Output
                            textOutput("ns_caption"),
                            tableOutput("ns_table") 
-#                          gt_output("ns_table")
-                        
+
                         ), #layout sidebar
 
                     ), #card
@@ -292,7 +296,8 @@ ui <- fluidPage(
   
  
 ) # ui end (fluidpage)
-  
+
+# Data Source for the App  
 my_data <-readRDS(file = "store_data.RDS")
 
 
@@ -405,7 +410,7 @@ server <- function(input, output, session) {
       Category %in% cat_subset,
       Region %in% reg_subset,
 
-     #conditionally filter the data frame for positive Sales, positive
+     #conditionally filter the data frame for Sales,
      # Quantity, Discount and Profit.
      
       ) %>%
@@ -442,8 +447,7 @@ server <- function(input, output, session) {
     }
   )
   
-  # Update Categorical Variable Menus on Data
-  # Exploration Tab for Summary Data 
+  # Update Categorical Variable Menus on Data Exploration Tab for Summary Data 
   output$cs_select <- renderUI({ 
     if (input$cs_choice == "1-Way Contingency Table") { 
       
@@ -575,14 +579,16 @@ server <- function(input, output, session) {
                       geom_bar(position = "dodge") +
                         scale_fill_discrete(name = ivar4) +
                           labs(
-                            title = paste("Count of Orders by", ivar4),
+                            title = paste("Count of Orders by", ivar4, "and", ivar3),
                               x = ivar3,
                               y = paste("Count by", ivar4)
             )
           
           
         }
-      }) %>% bindEvent(input$cg_display)
+        #control when the renderPlot is triggered
+      }) %>% bindEvent(input$cg_display)   
+    
 
 
 #    Create Numeric Data Summary Table
@@ -612,6 +618,7 @@ server <- function(input, output, session) {
                 q3 = quantile(!!sym(ivar1), 0.75),
                 max = max(!!sym(ivar1))) 
         
+        #control when the renderTable is triggered        
           }) %>% bindEvent(input$ns_display)
       
 
@@ -760,7 +767,8 @@ server <- function(input, output, session) {
                 
                 ggplotly(chlorplot)
             }
-          
+
+        #control when the renderPlotly is triggered          
         }) %>% bindEvent(input$ng_display)
       
   } #server end

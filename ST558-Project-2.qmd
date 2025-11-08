@@ -2,23 +2,22 @@
 title: "ST558-Project-2"
 format: html
 editor: visual
+
+author: Norman C. Allie
+date: 11/08/2025
+purpose: static file for Project 2 App
 ---
 
 ## Prepare for Analysis
 ```{r}
 
-library(cdlTools)
-library(dplyr)
-library(gt)
-library(gtsummary)
-library(knitr)
-library(lubridate)
-library(readxl)
-library(tidyverse)
-library(tigris)
-library(sf)
-library(scales)
-library(zipcodeR)
+library(cdlTools)  # for converting State to FIPS Code
+library(gt) #for making formatted contingency tables  
+library(janitor) #for cleaning up data and tables
+library(readxl) # for reading in MS Excel files
+library(tidyverse) # for making data manipulation, visualization, and analysis easier and more consistent by using a unified grammar and data structures
+library(tigris) #for generating the Chloropeth Map
+library(zipcodeR) # for working with zipcodes
 
 data_00 <- read_xls("US Superstore data.xls") 
 colnames(data_00) = gsub(" ", "_", colnames(data_00))
@@ -37,7 +36,7 @@ store_dat <- mutate(data_00,`Postal_Code` = normalize_zip(`Postal_Code`),
                     `Discount` = (`Discount`*100)) |>
   
                      rename(`Sub_Category` = `Sub-Category`) |> select(-`Order_ID`, -`Country`)                         
-
+#Append a Column for County
  store_dat <- zip_code_db |> 
    select(zipcode, county) |> 
    right_join(store_dat, by = c("zipcode"="Postal_Code")) |>
@@ -45,7 +44,7 @@ store_dat <- mutate(data_00,`Postal_Code` = normalize_zip(`Postal_Code`),
 
  
                      
-
+#RDS is the data source for Project 2 App
 saveRDS(store_dat, file = "store_data.RDS")
 write.csv(store_dat,"store_dat.csv")
 
@@ -104,7 +103,7 @@ table(store_dat$Category, store_dat$Month)
 cat("\n")
 
 
-#Numerical Variable Summaries
+#Numeric Variable Summaries
 cat("Sales by Category ", "\n")
 store_dat |> 
   select(Sales, Category) |> 
