@@ -173,8 +173,7 @@ ui <- fluidPage(
                           selectizeInput(
                             inputId = "cs_choice",
                             label = "Select Summary Type",
-                            choices = c(NA, cat_summaries) ,
-                            selected = NULL
+                            choices = c(cat_summaries) ,
                           ),
                           
                           #Dynamic UI for Categorical Numerical Summaries Selection
@@ -201,8 +200,7 @@ ui <- fluidPage(
                           selectizeInput(
                             inputId = "cg_choice",
                             label = "Select Chart Type",
-                            choices = c(NA, cat_charts) ,
-                            selected = NULL
+                            choices = c(cat_charts) ,
                             ),
                           
                           #Dynamic UI for Categorical Graphical Summary Selection
@@ -235,15 +233,13 @@ ui <- fluidPage(
                           selectizeInput(
                             inputId = "nv_out_1",
                             label = "Select Summary Variable",
-                            choices = c(NA, nvars),
-                            selected = NULL
+                            choices = c(nvars),
                           ),
                           
                           selectizeInput(
                             inputId = "cv_out_5",
                             label = "Select Categorical Variable",
-                            choices = c(NA, cvars),
-                            selected = NULL
+                            choices = c(cvars),
                           ),
  
                           actionButton(inputId = "ns_display",label = "Display Summary"),
@@ -267,8 +263,7 @@ ui <- fluidPage(
                           selectizeInput(
                             inputId = "ng_choice",
                             label = "Select Chart Type",
-                            choices = c(NA, num_charts) ,
-                            selected = NULL
+                            choices = c(num_charts) ,
                             ),
                           
                           #Dynamic UI for Numeric Graphical Summary Selection
