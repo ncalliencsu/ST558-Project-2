@@ -3,7 +3,7 @@
 #purpose: Project 2
 # US Superstore Data
 
-library(bslib)        # For building UI's easier
+ library(bslib)        # For building UI's easier
  library(gt)           # For making formatted contingency tables
  library(janitor)      # For examining and cleaning dirty data
  library(plotly)       # For interactive ggplots
@@ -435,11 +435,20 @@ server <- function(input, output, session) {
   
   #Create a renderDataTable() object to display Data
   #on Download Data Panel
-  output$DT_download <- renderDataTable(subsetted$data)
+  output$DT_download <- renderDataTable({
+    
+    validate(
+      need(!is.null(subsetted$data), "Please select your variables, subset, and click the 'Subset Data' button."
+      ))
+    
+    subsetted$data
+  })
   
   #Download Handler for the Data
   output$downloadData <- downloadHandler(
-    filename = function() {
+
+    
+     filename = function() {
       paste("store_data-", Sys.Date(), ".csv", sep="")
     },
     content = function(file) {
@@ -502,7 +511,7 @@ server <- function(input, output, session) {
     output$cs_table <- render_gt({
 
       validate(
-        need(!is.null(subsetted$data), "Please select your variables, subset, and click the 'Analyze Data' button."
+        need(!is.null(subsetted$data), "Please select your variables, subset, and click the 'Subset Data' button."
              ))
       
       if (isolate(input$cs_choice) == "1-Way Contingency Table") {
@@ -548,7 +557,7 @@ server <- function(input, output, session) {
       output$cg_plot <- renderPlot({input$cg_display
         
         validate(
-          need(!is.null(subsetted$data), "Please select your variables, subset, and click the 'Analyze Data' button."
+          need(!is.null(subsetted$data), "Please select your variables, subset, and click the 'Subset Data' button."
           ))
         
         if (isolate(input$cg_choice) == "Simple Bar Plot") {
@@ -598,7 +607,7 @@ server <- function(input, output, session) {
         
      
         validate(
-          need(!is.null(subsetted$data), "Please select your variables, subset, and click the 'Analyze Data' button."
+          need(!is.null(subsetted$data), "Please select your variables, subset, and click the 'Subset Data' button."
           ))
         
         output$ns_caption <- renderText({
@@ -679,7 +688,7 @@ server <- function(input, output, session) {
       output$ng_plot <- renderPlotly({
         
         validate(
-          need(!is.null(subsetted$data), "Please select your variables, subset, and click the 'Analyze Data' button."
+          need(!is.null(subsetted$data), "Please select your variables, subset, and click the 'Subset Data' button."
           ))
         
         if (isolate(input$ng_choice) == "Box Plot") {
