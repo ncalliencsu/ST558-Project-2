@@ -127,7 +127,7 @@ ui <- fluidPage(
                  p("The Data Download panel allows you to view the data and provides a means for downloading the data 
                    in csv format. The Data Exporation panel has as sub-panel for categorical variable analysis and a 
                    sub-panel for numeric variable analysis. Each sub-panel provides a panel for summary data and a 
-                   panel for graphical output.  Youi can select appropriate variables using pickers available on each 
+                   panel for graphical output.  You can select appropriate variables using pickers available on each 
                    sub-panel. Action buttons are provided for displaying data of interest.
                    
                    Note that the Chloropeth Map on the Numeric Analysis panel uses the entire dataset to render the plot. The subsetted data is not used for this function.")
