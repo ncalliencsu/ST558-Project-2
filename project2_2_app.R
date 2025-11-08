@@ -1,5 +1,5 @@
 library(bslib)        # For building UI's easier
-library(DT)           # For interactive data tableslibrary(janitor)
+library(DT)           # For interactive data tables
 library(dplyr)        # Renaming variables instead of rename in Base R
 library(ggplot2)      # For making nice versatile plots
 library(gt)           # For making formatted display tables
@@ -8,6 +8,8 @@ library(janitor)      # For examining and cleaning dirty data
 library(plotly)       # For interactive ggplots
 library(shiny)        # For building Shiny Apps
 library(shinyalert)   # For creating popup messages in Shiny
+library(shinycssloaders)   #For loaders
+library(shinydashboard) # For hte box function
 library(tidyverse)    # For making working with data easy
 library(tigris)       # For making Chloropeth Map
 library(zipcodeR)     # For working with Zip Code data
@@ -23,6 +25,9 @@ ui <- fluidPage(
   titlePanel("Store Data Analysis"),
   sidebarLayout(
     sidebarPanel(
+      
+      #Reduce Width of Sidebar
+      width = 3,
       
       #Numeric Variable Definition
       h2("Select Numeric Variables:"),
@@ -70,8 +75,8 @@ ui <- fluidPage(
         selected = cvars_2[1]
       ),
       
-
-      actionButton(inputId = "analyze",label = "Analyze Data")
+      #
+      actionButton(inputId = "subset_data",label = "Subset Data")
 
       
     ), #sidebarPanel()
@@ -81,16 +86,58 @@ ui <- fluidPage(
       tabsetPanel(
         id = "main_tabs",
         tabPanel("About",
-                 h4("Description and Purpose of the App"), 
+                 h4("US Superstore App"), 
 
-                 # Output area for Text
-                 p("Purpose of the App"),
-                 p("Description of the Data"), 
-                 p("Description of the App"), 
-                                    
+                 frow1 <- fluidRow(
+                    box(title = h6(strong("Purpose of the App"),),
+                      status = "primary",
+                      solidHeader = F,
+                      collapsible = F,
+                      width = 12,
+                      fluidRow(column(width = 8, textOutput( "purpose" )),
+                              column(width = 4, align = "center",
+                                     img(src="https://storage.googleapis.com/kaggle-datasets-images/422303/805812/e6738158f953eeab9dceb6fac01d6ce5/dataset-cover.jpg?t=2019-11-21-09-14-22", width=400))))),
+                 
+                 p(),
+                strong("Description of the Data"),
+                 p("The dataset contains data on orders placed and shipped for the calendar years 2014 - 2018."), 
+                 p("The categorical variables available for analysis are:"),
+                 tags$ol(
+                   tags$li("Category (Furniture, Office Supplies, Technology)"),
+                   tags$li("Sub Category",
+                     tags$ol(
+                       tags$li("Accessories, Appliances, Art, Binders, Bookcases, Chairs"), 
+                       tags$li("Copiers, Envelopes, Fasteners, Furnishings, Labels, Machines"), 
+                       tags$li("Paper, Phones, Storage, Tables"),
+                       )),
+                   tags$li("Month, Year"),
+                   tags$li("Segment (Consumer, Corporate, Home Office)"),
+                   tags$li("Region (East, West, South, Central State")
+                 ),
+                 p("The continuous variables are Sales, Quantity, Discount and Profit."),
 
-        ),
+                 strong("Description of the App"),
+                 p("The sidebar on this page is for selecting variables to subset the dataset. You may select two (2) 
+                   numeric variables and two (2) categorical variables to create a subset. If you select numeric 
+                   variable(s), you will see a slider appear that will allow you to filter the numeric variable(s) up 
+                   to the level(s) of the slider selected. If you select a categorical variable(s), the data will be 
+                   filtered by the selected variable(s). When you are ready to subset the data, press the 'Subset 
+                   Data' button."),
+                 
+                 p("The Data Download panel allows you to view the data and provides a means for downloading the data 
+                   in csv format. The Data Exporation panel has as sub-panel for categorical variable analysis and a 
+                   sub-panel for numeric variable analysis. Each sub-panel provides a panel for summary data and a 
+                   panel for graphical output.  Youi can select appropriate variables using pickers available on each 
+                   sub-panel. Action buttons are provided for displaying data of interest.
+                   
+                   Note that the Chloropeth Map on the Numeric Analysis panel uses the entire dataset to render the plot. The subsetted data is not used for this function.")
+                 
+                 ),
+
+
+       
         
+                
         tabPanel("Data Download",
                  
                  card(card_header("Data Table"),
@@ -106,7 +153,7 @@ ui <- fluidPage(
                   id = "data_exp",
                   
 
-###########################Categorical Variable Analysis###############################################
+###########################Categorical Variable Analysis UI Definition###############################################
 
                   tabPanel("Categorical Variable Analysis",
 
@@ -115,7 +162,7 @@ ui <- fluidPage(
                      card(
                       card_header("Data Summary"),
                       layout_sidebar(
-                        sidebar = sidebar(
+                        sidebar = sidebar(width = 300,
                           bg = "lightgrey",
                           
                           selectizeInput(
@@ -143,7 +190,7 @@ ui <- fluidPage(
                     card(
                       card_header("Graphical Summary"),
                       layout_sidebar(
-                        sidebar = sidebar(
+                        sidebar = sidebar(width = 300,
                           bg = "lightgrey",
                           
                           selectizeInput(
@@ -168,7 +215,7 @@ ui <- fluidPage(
                   ), #tabPanel Categorical Variables
 
 
-####################Numeric Variable Analysis####################################################################
+####################Numeric Variable Analysis UI Definition####################################################################
 
                   tabPanel("Numeric Variable Analysis",
 
@@ -177,7 +224,7 @@ ui <- fluidPage(
                      card(
                       card_header("Data Summary"),
                       layout_sidebar(
-                        sidebar = sidebar(
+                        sidebar = sidebar(width = 300,
                           bg = "lightgrey",
                           
                           selectizeInput(
@@ -198,6 +245,7 @@ ui <- fluidPage(
                           ),
                           
                           #Dynamic UI for Numerical Summaries Output
+                           textOutput("ns_caption"),
                            tableOutput("ns_table") 
 #                          gt_output("ns_table")
                         
@@ -209,7 +257,7 @@ ui <- fluidPage(
                     card(
                       card_header("Graphical Summary"),
                       layout_sidebar(
-                        sidebar = sidebar(
+                        sidebar = sidebar(width = 300,
                           bg = "lightgrey",
                           
                           selectizeInput(
@@ -225,7 +273,9 @@ ui <- fluidPage(
                           actionButton(inputId = "ng_display",label = "Display Plot")
                           ), #sidebar
                        
+                          withSpinner(
                           plotlyOutput("ng_plot")
+                          )
                         
                         ), #layout
                       ),
@@ -252,6 +302,11 @@ my_data <-readRDS(file = "store_data.RDS")
 
 # Define server logic 
 server <- function(input, output, session) {
+
+  
+# About Page Purpose Text and Image  
+  output$purpose <- renderText("The online sector, referred to as “clicks,” has been slowly eating up market share in the past two decades. E-commerce platform allows people to buy products from books, toys, clothes, and shoes to food, furniture, and other household items. The purpose of this app is to analyze sales data from an unidentified online US superstore that sold many of these types of items.")
+  
 
 # Update Slider Values on Main Sidebar
 # based on Numeric Variable Selection
@@ -309,8 +364,8 @@ server <- function(input, output, session) {
   
   subsetted <- reactiveValues(data = NULL)
   
-  #Analyze Button Executes the Code in this Block
-  observeEvent(input$analyze,{
+  #Subset Data Button Executes the Code in this Block
+  observeEvent(input$subset_data,{
 
 # Subset Numeric and Categorical Variables 
 
@@ -486,7 +541,7 @@ server <- function(input, output, session) {
 
       #Create Categorical Graphical Summary
 
-      output$cg_plot <- renderPlot({ input$cg_display
+      output$cg_plot <- renderPlot({input$cg_display
         
         validate(
           need(!is.null(subsetted$data), "Please select your variables, subset, and click the 'Analyze Data' button."
@@ -496,55 +551,64 @@ server <- function(input, output, session) {
           
           ivar3 <- isolate(input$cv_out_3)
 
-          ggplot(data = subsetted$data, aes(x = !!sym(ivar3))) +
-            geom_bar() +
-            geom_text(stat = 'count', aes(label = ..count..), vjust = -1) +
-            labs(
-              title = paste("Count of Orders by", ivar3),
-              x = ivar3,
-              y = paste("Count by", ivar3)
+                ggplot(data = subsetted$data, aes(x = !!sym(ivar3))) +
+                    geom_bar() +
+                      geom_text(stat = 'count', aes(label = ..count..), vjust = -1) +
+                        labs(
+                          title = paste("Count of Orders by", ivar3),
+                            x = ivar3,
+                            y = paste("Count by", ivar3)
             )
           
+
         } else if (isolate(input$cg_choice) == "Grouped Bar Plot") {
           
           ivar3 <- isolate(input$cv_out_3)
           ivar4 <- isolate(input$cv_out_4)
 
-          ggplot(data = subsetted$data, aes(x = !!sym(ivar3), fill = !!sym(ivar4))) +
-            geom_bar(position = "dodge") +
-            scale_fill_discrete(name = ivar4) +
-            labs(
-              title = paste("Count of Orders by", ivar4),
-              x = ivar3,
-              y = paste("Count by", ivar4)
+              ggplot(data = subsetted$data, aes(x = !!sym(ivar3), fill = !!sym(ivar4))) +
+                      geom_bar(position = "dodge") +
+                        scale_fill_discrete(name = ivar4) +
+                          labs(
+                            title = paste("Count of Orders by", ivar4),
+                              x = ivar3,
+                              y = paste("Count by", ivar4)
             )
+          
+          
         }
       }) %>% bindEvent(input$cg_display)
 
 
 #    Create Numeric Data Summary Table
-
+      
+      #Generate Caption for Summary Table
       output$ns_table <- renderTable({ 
         
+     
         validate(
           need(!is.null(subsetted$data), "Please select your variables, subset, and click the 'Analyze Data' button."
           ))
         
+        output$ns_caption <- renderText({
+          paste("Summary Statistics for ", input$nv_out_1, " by ", input$cv_out_5)
+        }) %>% bindEvent(input$ns_display)
+        
         ivar1 <- isolate(input$nv_out_1)
         ivar5 <- isolate(input$cv_out_5)
-
+        
         subsetted$data |>
-          select(!!sym(ivar1), !!sym(ivar5)) |>
-          group_by(!!sym(ivar5)) |>
-          summarize(min = min(!!sym(ivar1)),
-                    q1 = quantile(!!sym(ivar1), 0.25),
-                    median = median(!!sym(ivar1)),
-                    mean = mean(!!sym(ivar1)),
-                    q3 = quantile(!!sym(ivar1), 0.75),
-                    max = max(!!sym(ivar1))) 
-
-        }) %>% bindEvent(input$ns_display)
-    
+                select(!!sym(ivar1), !!sym(ivar5)) |>
+                group_by(!!sym(ivar5)) |>
+                summarise(min = min(!!sym(ivar1)),
+                q1 = quantile(!!sym(ivar1), 0.25),
+                median = median(!!sym(ivar1)),
+                mean = mean(!!sym(ivar1)),
+                q3 = quantile(!!sym(ivar1), 0.75),
+                max = max(!!sym(ivar1))) 
+        
+          }) %>% bindEvent(input$ns_display)
+      
 
     # Update Numeric Variable Menus on Data Exploration Tab for 
     # Graphical Summaries based on Type of Plot Selected 
@@ -598,7 +662,7 @@ server <- function(input, output, session) {
     }) 
           
           
-    #Create Numerical Graphical Summary
+    #Create Numeric Graphical Summary
     
       output$ng_plot <- renderPlotly({
         
